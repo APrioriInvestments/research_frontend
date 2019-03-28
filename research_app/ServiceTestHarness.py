@@ -62,7 +62,7 @@ class ServiceTestHarness:
         self.serviceManager = InProcessServiceManager(lambda : dbConnectionFactory)
         self.serializationContext = TypedPythonCodebase.FromRootlevelModule(research_app).serializationContext
 
-        self.serviceManager.startServiceWorker()
+        self.serviceManager.start()
         self.db = self.connect()
         self.db.subscribeToSchema(service_schema)
         self.db.setSerializationContext(self.serializationContext)
