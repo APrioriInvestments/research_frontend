@@ -1,7 +1,9 @@
 *.pyc
 *.pem
 *.log
+*.egg-info
 
 # a leading slash means only match at the top of the repo
 /.venv
+/dist
 
