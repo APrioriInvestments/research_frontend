@@ -14,10 +14,13 @@
 
 from object_database import ServiceBase, service_schema, TcpServer
 from object_database.service_manager.SubprocessServiceManager import SubprocessServiceManager
+from object_database.service_manager.InProcessServiceManager import InProcessServiceManager
 from object_database.service_manager.Task import TaskService, TaskDispatchService
 from object_database.util import sslContextFromCertPathOrNone
 from object_database.web.ActiveWebService import ActiveWebService
 from object_database.web.LoginPlugin import LoginIpPlugin, User
+from object_database import connect
+
 
 from typed_python.Codebase import Codebase as TypedPythonCodebase
 
@@ -32,6 +35,7 @@ import tempfile
 import time
 import traceback
 
+
 class ServiceTestHarness:
     """Class to set up a complete simulation of the all research_app services so we can test them."""
     def __init__(self, port=None):
@@ -43,18 +47,22 @@ class ServiceTestHarness:
 
         self.startObjectDB()
 
-        self.serviceManager = SubprocessServiceManager(
-            "localhost", "localhost", self._port_num,
-            os.path.join(self.tempDir, "code"),
-            os.path.join(self.tempDir, "storage"),
-            self._auth_token,
-            isMaster=True, shutdownTimeout=.25,
-            maxGbRam=128, # our simulated services don't actually use this much, but we need to reserve
-            maxCores=16   # enough to be able to do the simulation.
-        )
+        # self.serviceManager = SubprocessServiceManager(
+        #    "localhost", "localhost", self._port_num,
+        #    os.path.join(self.tempDir, "code"),
+        #    os.path.join(self.tempDir, "storage"),
+        #    self._auth_token,
+        #    isMaster=True, shutdownTimeout=.25,
+        #    maxGbRam=128, # our simulated services don't actually use this much, but we need to reserve
+        #    maxCores=16   # enough to be able to do the simulation.
+        # )
+        # TODO: this does not work
+        dbConnectionFactory = connect("localhost",  self._port_num,
+                                      self._auth_token)
+        self.serviceManager = InProcessServiceManager(lambda : dbConnectionFactory)
         self.serializationContext = TypedPythonCodebase.FromRootlevelModule(research_app).serializationContext
 
-        self.serviceManager.start()
+        self.serviceManager.startServiceWorker()
         self.db = self.connect()
         self.db.subscribeToSchema(service_schema)
         self.db.setSerializationContext(self.serializationContext)
